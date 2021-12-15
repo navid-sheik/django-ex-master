@@ -1,0 +1,389 @@
+{% extends "mainapp/base.html" %}
+
+
+{% block content %}
+{% load crispy_forms_tags %}
+
+
+<!-- {% for message in messages %}
+
+<div class="hhb">
+    <a class="close" href="#" data-dismiss="alert">×</a>
+
+    {{ message }}
+
+</div>
+{% endfor %} -->
+{% load crispy_forms_tags %}
+
+{%if user.is_authenticated %}
+
+
+<div class="container" id="container">
+    <div class="row">
+        <div class="col-4">
+            <h3 id="current_username"><b>{{ user.username }}</b></h3>
+            <br>
+          &emsp;&emsp;&emsp;&emsp;&emsp;
+          <img v-bind:src="current_user.profile.profile_image"  v-if="current_user !== null" style="width:180px;height:180px;object-fit:cover" class="img-thumbnail" alt="profile_pic">
+        </div>
+
+        <div class="col-8">
+
+
+            <div id="updateForm" v-if="readonly == false">
+
+                <form method="POST"  @submit.prevent enctype="multipart/form-data" id="profileUpdateForm">
+
+                    {% csrf_token %}
+
+
+                    <div class="form-group">
+                        <label for="inputEmailLabel">Email Address:</label>
+                        <input type="email"    v-model = "current_user.email" name="emailUser"  class="form-control" id="userEmail"  name = "userEmail" aria-describedby="emailHelp" placeholder="Update email">
+                        <!-- <small id="emailHelp" class="form-text text-muted">Update your email</small> -->
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inputDateLabel">Date of Birth:</label>
+                        <input type="date"    v-model = "current_user.profile.dob" name="dobUser"  class="form-control" id="userDob"  name = "userDob" aria-describedby="dobHelp" placeholder="Update date of birth">
+                        <!-- <small id="emailHelp" class="form-text text-muted">Update your email</small> -->
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="inputCityLabel">City:</label>
+                        <input type="text"    v-model = "current_user.profile.city"  name="cityUser" class="form-control" id="userCity"  name = "userCity" aria-describedby="userCityHelp" placeholder="Update city">
+                        <!-- <small id="emailHelp" class="form-text text-muted">Update your email</small> -->
+                    </div>
+
+
+
+                    <div class="form-group">
+                        <input type="file"  id="inputProfilePic" name="profilePic">
+
+                    </div>
+ 
+
+                    <button class="btn btn-primary"  id= "saveProfileBtn" @click.native="saveProfile()" v-else-if="readonly == false">Save Profile&nbsp;&nbsp;<span class="fas fa-save"></span></button>
+                </form>
+            </div>
+        <div id="userInfo"  v-else-if="readonly == true">
+
+            <table class="table table-user-information">
+                <tbody>
+                <tr>
+
+                    <td><span class="fas fa-user"></span>  Username:</td>
+                    <td id="profileUsername"> [[current_user.username]]</td>
+                </tr>
+                <tr>
+                    <td><span class="fas fa-envelope-open"></span> Email:</td>
+                    <td  id="profileEmail">[[current_user.email]]</td>
+                </tr>
+                <tr>
+                    <td><span class="fas fa-calendar"></span> Date of birth:</td>
+                    <td  id="profiledob">[[current_user.profile.dob]]</td>
+                </tr>
+                <tr>
+                    <td><span class="fas fa-city"></span>   City:</td>
+                    <td  id="profileCity">[[current_user.profile.city]]</td>
+                </tr><tr>&nbsp;</tr>
+                </tbody>
+            </table>
+
+            <button class="btn btn-primary"  id= "editProfileBtn" @click.native="editProfile()" v-if="readonly == true">Edit Info &nbsp;<i class="fas fa-edit"></i></button>
+
+        </div>
+        </div>
+    </div>
+
+
+    <br><br>
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="hobbies-tab" data-bs-toggle="tab" data-bs-target="#hobbies" type="button" role="tab" aria-controls="hobbies" aria-selected="true">My Hobbies</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="newhobby-tab" data-bs-toggle="tab" data-bs-target="#newhobby" type="button" role="tab" aria-controls="newhobby" aria-selected="false">Create Hobby</button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="hobbies" role="tabpanel" aria-labelledby="hobbies-tab">
+            <div class="row">
+
+                <div class="col-4">
+                  <p>
+                    <h2>List of Hobbies:</h2>
+                    <h6>
+                    <form id="hobbySelecForm">
+                      <div class="col-md-12 text-center">
+                        {% csrf_token %}
+                        {% crispy form %}
+                      </div>
+
+                        <div class="col-md-12 text-center">
+                          <button type="button" class="btn btn-primary" @click.native="addHobby()">Add Selected Hobbies &nbsp;&nbsp;<i class="fas fa-plus"></i></button>
+                        </div>
+                    </form>
+                    </h6>
+                  </p>
+                </div>
+
+                <div class="d-flex align-content-start flex-wrap justify-content-start col-8 py-2" style="background-color: #ebebeb" id="hobbyContainer">
+                  <p><h2>Your Hobbies:&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;</h2><br>
+                    <ul class="list-group" v-for="hobby in hobbies">
+                        <li class="list-group-item w-10 p-3 rounded border text-black" style="background-color: #85c7c5"><b>[[ hobby.name ]]</b>&nbsp;&nbsp;
+                        <button type="button" class="close" aria-label="Close" @click.native="deleteHobby(hobby)">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="newhobby" role="tabpanel" aria-labelledby="newhobby-tab">
+            {% csrf_token %}
+            <br>
+            <div class="row">
+            <p>&emsp;
+                <h2>Create New Hobby:</h2>
+            </p>
+            </div>
+            <br>
+            <form>
+
+                <div class="form-group" id="addHobbyForm">
+                    <input type="text" class="form-control" id="nameNewHobby" name="nameNewHobby" placeholder="Enter Hobby">
+                    <!-- <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small> -->
+                </div>
+
+                <script>
+                    $(document).ready(function () {
+                        $('.selectpicker').selectpicker();
+                    })
+                </script>
+
+                <button type="button" class="btn btn-primary " @click.native="createNewHobby()"> Create <i class="fas fa-plus"></i></button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    $('input[type="file"]').change(function(e){
+        var fileName = e.target.files[0].name;
+        $('.custom-file-label').html(fileName);
+    });
+</script>
+
+{% endif%}
+
+
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+
+    $('select').selectpicker();
+
+
+
+    console.log("working")
+    let myApp = Vue.createApp({
+        delimiters: ["[[", "]]"],
+        data() {
+            return {
+                hobbies: [],
+                current_user: {},
+                readonly: true,
+                // email :  this.current_user.email,
+
+            }
+        },
+
+        async created() {
+            //make a get request
+            let response = await fetch("{% url 'mainapp:current_hobbies' %}");
+            if (response.ok) {
+                let data = await response.json();
+                console.log("inside created");
+
+                this.current_user = data.current_user;
+                console.log(data.current_user);
+                this.hobbies = data.current_user.hobbies
+                console.log("The hobbies", this.hobbies)
+            }
+            else {
+                alert("failed to load the list of hobbies");
+            }
+        },
+        methods: {
+
+            async createNewHobby() {
+                let createHobbyForm = document.querySelector('#addHobbyForm');
+                let hobbyName = createHobbyForm.querySelector('input[name="nameNewHobby"]').value;
+                if (hobbyName != "") {
+                    if (!this.hobbies.some(e => e.name === hobbyName)) {
+
+
+                        let newHobbyData = { "hobby": hobbyName }
+
+                        // var options = document.getElementById('selectHobby').selectedOptions;
+                        // var values = Array.from(options).map(({ value }) => value);
+                        // console.log(values);
+
+
+                        console.log(newHobbyData)
+                        let response = await fetch("{% url 'mainapp:create_new_hobby' %}", {
+                            method: "POST",
+                            headers: { "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value, },
+                            body: JSON.stringify(newHobbyData),
+                        });
+                        if (response.ok) {
+                            console.log("Accepted")
+                            let data = await response.json();
+                            this.current_user = data.current_user
+                            this.hobbies = data.current_user.hobbies
+                            document.querySelector("#hobbySelecForm").innerHTML = data.hobby_form;
+                            let createHobbyForm = document.querySelector('#addHobbyForm');
+                            createHobbyForm.querySelector('input[name="nameNewHobby"]').value = "";
+                        } else {
+                            console.log("Error")
+                        }
+
+                    } else {
+                        alert("Already in database")
+                    }
+                }else {
+                    alert("Empty record")
+                }
+
+            },
+
+            async addHobby() {
+                let createHobbyForm = document.querySelector('#hobbySelecForm');
+                let hobbies = createHobbyForm.querySelectorAll('input[name="hobby"]:checked')
+                console.log(hobbies)
+                var hobbiesArray = []
+                for (var i = 0; i < hobbies.length; i++) {
+                    hobbiesArray.push(hobbies[i].value);
+                }
+                if (hobbiesArray.length != 0) {
+
+                    let hobbiesData = { "hobbies": hobbiesArray }
+
+                    // var options = document.getElementById('selectHobby').selectedOptions;
+                    // var values = Array.from(options).map(({ value }) => value);
+                    // console.log(values);
+
+
+                    console.log(hobbiesData)
+                    let response = await fetch("{% url 'mainapp:add_new_hobby' %}", {
+                        method: "POST",
+                        headers: { "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value, },
+                        body: JSON.stringify(hobbiesData),
+                    });
+                    if (response.ok) {
+                        console.log("Accepted")
+                        let data = await response.json();
+                        this.current_user = data.current_user
+                        this.hobbies = data.current_user.hobbies
+                        let hobbies = createHobbyForm.querySelectorAll('input[name="hobby"]')
+
+
+                        for (var i = 0; i < elements.length; i++) {
+                                if (elements[i].type == "radio") {
+                                    elements[i].checked = false;
+                                }
+                            }
+
+                    } else {
+                        console.log("Error")
+                    }
+
+
+
+                } else {
+                    alert("Select one item")
+                }
+
+
+
+
+
+            },
+
+            async deleteHobby(hobby) {
+                if (confirm(`Want to continue to delete ${hobby.name}?`)) {
+                    console.log(hobby.api)
+                    let response = await fetch(hobby.api, {
+                        method: "DELETE",
+                        headers: { "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value, },
+                    });
+                    if (response.ok) {
+                        console.log("Accepted")
+                        let data = await response.json();
+                        this.current_user = data.current_user
+                        this.hobbies = data.current_user.hobbies
+
+                    } else {
+                        console.log("Error")
+                    }
+
+
+
+                }
+
+
+
+
+
+            },
+
+            async saveProfile() {
+
+                let form = (document.getElementById('profileUpdateForm'));
+                const formData = new FormData(form)
+                console.log(formData)
+                let response = await fetch("{% url 'mainapp:update_user' %}", {
+                    method: "POST",
+                    headers: { "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value, },
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    let data = await response.json();
+                    console.log(data.current_user)
+                    this.current_user =  data.current_user
+                    this.readonly = true
+
+                } else {
+                    alert("Can't post actor to database");
+                }
+
+
+
+
+            },
+
+            editProfile() {
+                this.readonly = false
+
+            }
+
+
+
+
+
+
+        }
+    })
+    myApp.mount('#container')
+</script>
+
+{% endblock %}

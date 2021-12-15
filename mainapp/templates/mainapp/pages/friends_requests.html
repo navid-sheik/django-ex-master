@@ -1,0 +1,146 @@
+{% extends "mainapp/base.html" %}
+
+
+{% block content %}
+{% load crispy_forms_tags %}
+
+
+<!-- {% for message in messages %}
+
+<div class="hhb">
+    <a class="close" href="#" data-dismiss="alert">×</a>
+
+    {{ message }}
+
+</div>
+{% endfor %} -->
+
+
+{%if user.is_authenticated %}
+
+<div id="container">
+<!--     {% for r in requests %}
+        {{ r.from_user}}
+
+    {% endfor %}
+ -->
+    {% csrf_token %}
+    <div class="row">
+
+        <div class="col-8 offset-md-2">
+            <table class="table table-hover">
+                <thead class="thead-light">
+                  <tr>
+                    <th scope="col">Friend Requests:</th>
+                    <th scope="col"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                    <tr v-if="requests.length == 0">
+                        <td>No incoming friend requests!</td>
+                    </tr>
+                    <tr v-for="request in requests">
+                        <td>[[ request.from_user.username ]]</td>
+                        <td>
+                          <p class="text-right">&emsp;&emsp;
+                            <button type="button" class="btn btn-success" @click.native="acceptRequest(request.from_user)">ACCEPT <i class="fas fa-user-check"></i></button>
+                            &nbsp;
+                            <button type="button" class="btn btn-danger" @click.native="declineRequest(request.from_user)">DECLINE <i class="fas fa-user-times"></i></button>
+                          </p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+          </div>
+        </div>
+</div>
+
+{% endif%}
+
+
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+
+    let myApp = Vue.createApp({
+        delimiters: ["[[", "]]"],
+        data() {
+            return {
+                requests: [],
+                current_user: {}
+            }
+        },
+
+        async created() {
+            // make a get request
+            let response = await fetch("{% url 'mainapp:friends_requests' %}");
+            if (response.ok) {
+                let data = await response.json();
+                console.log("inside created");
+                console.log(data.requests)
+                this.requests =  data.requests
+
+                // this.current_user = data.current_user;
+                // console.log(data.current_user);
+                // this.hobbies = data.current_user.hobbies
+                // console.log("The hobbies", this.hobbies)
+            }
+            else {
+                alert("failed to load the list of hobbies");
+            }
+        },
+        methods: {
+
+            async acceptRequest(user) {
+
+                let response = await fetch("{% url 'mainapp:accept_request' %}", {
+                    method: "POST",
+                    headers: { "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value, },
+                    body: JSON.stringify(user),
+                });
+                if (response.ok) {
+                    console.log("Accepted")
+                    let data = await response.json();
+                    console.log(data.requests)
+                    this.requests =  data.requests
+                    //document.querySelector("#hobbySelecForm").innerHTML = data.hobby_form;
+
+                } else {
+                    console.log("Error")
+                }
+
+
+            },
+            async declineRequest(user) {
+
+               let response = await fetch("{% url 'mainapp:decline_request' %}", {
+                   method: "POST",
+                   headers: { "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value, },
+                   body: JSON.stringify(user),
+               });
+               if (response.ok) {
+                   console.log("Accepted")
+                   let data = await response.json();
+                   console.log(data.requests)
+                   this.requests =  data.requests
+                   //document.querySelector("#hobbySelecForm").innerHTML = data.hobby_form;
+
+               } else {
+                   console.log("Error")
+               }
+
+
+           },
+
+
+
+
+        },
+
+    })
+    myApp.mount('#container')
+</script>
+
+{% endblock %}

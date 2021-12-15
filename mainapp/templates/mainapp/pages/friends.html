@@ -1,0 +1,219 @@
+{% extends "mainapp/base.html" %}
+
+
+{% block content %}
+
+
+{%if user.is_authenticated %}
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/solid.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+<div id="app">
+    <div class="container">
+        <div class="row">
+              <div class="col-3">
+                  <div id="filter">
+                      <form id = "formdata" method = "POST" name="filterForm" class="card p-3 bg-light">
+                        <h3>Filter:</h3><br>
+                          {% csrf_token %}
+
+                            <div class="input-group mb-3">
+                                <span class="input-group-text" id="basic-addon1"> <i class="fas fa-user"></i></span>
+                              <input type="text" class="form-control" name="age1" placeholder="Minimum Age" aria-label="Minimum Age" aria-describedby="basic-addon1"><br>
+                            </div>
+
+                            <div class="input-group mb-3">
+                                <span class="input-group-text" id="basic-addon1"> <i class="fas fa-user"></i></span>
+                              <input type="text" class="form-control" name="age2" placeholder="Maximum Age" aria-label="Minimum Age" aria-describedby="basic-addon1"><br>
+                            </div>
+
+                            <div class="input-group mb-3">
+                                <span class="input-group-text" id="basic-addon1"> <i class="fas fa-map-marked"></i></span>
+                              <input type="text" class="form-control" name="city" placeholder="City" aria-label="Minimum Age" aria-describedby="basic-addon1"><br>
+                            </div>
+
+                      </form>
+                      <br>
+                      <button class="btn btn-primary btn-lg btn-block" type="submit" name="filter" @click="filter()">Search &nbsp;<i class="fas fa-search"></i></button>
+                  </div>
+              </div>
+            <div class="col-9">
+                <table class="table table-striped my-2">
+                    <tr>
+                        <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Username</th>
+                        <th>Friend Status</th>
+                    </tr>
+                    {% csrf_token %}
+                    <tr v-for="user in users">
+                        <td>
+                          <span class="fas fa-user-circle"> &nbsp;
+
+                          </span>
+                          [[ user.username ]]
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-success" @click.native="sendRequest(user)" v-if="user.isPending == false && (user.isFriend == false)">ADD
+                                FRIEND <span class="fas fa-user-plus"></span></button>
+                            <button type="button" class="btn btn-info" @click.native=""
+                                v-else-if="user.isPending == true">PENDING <span class="fas fa-user-clock"></span></button>
+
+                             <button type="button" class="btn btn-primary" @click.native=""
+                                v-else-if="user.isFriend == true">FRIEND <span class="fas fa-user-friends"></span> </button>
+                        </td>
+
+
+
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endif%}
+
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    //show list of users
+    console.log("working")
+    let myApp = Vue.createApp({
+        delimiters: ["[[", "]]"],
+        data() {
+            return {
+                users: [],
+                current_user: {},
+                pending_requests: []
+            }
+        },
+        async created() {
+            //make a get request
+            let response = await fetch("{% url 'mainapp:friends_api' %}");
+            if (response.ok) {
+                let data = await response.json();
+
+                console.log(data.users);
+
+                console.log(data.requests_sent)
+                let newPendingFilterUsers = this.getFilterArrayPendingFriends(data.users, data.requests_sent, data.current_user.friends);
+                console.log(newPendingFilterUsers)
+                this.users = newPendingFilterUsers;
+                this.current_user = data.current_user;
+
+                this.pending_requests = data.requests;
+                console.log(this.current_user)
+
+
+            }
+            else {
+                alert("failed to load the list of user");
+            }
+        },
+        methods: {
+
+            async sendRequest(toUser) {
+                console.log(toUser)
+                if (toUser.isPending == false) {
+                    if (confirm(`Want to continue to add ${toUser.username}?`)) {
+                        console.log(toUser.api)
+                        let response = await fetch(toUser.api, {
+                            method: "POST",
+                            headers: { "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value, },
+
+                        });
+                        if (response.ok) {
+
+                            let data = await response.json();
+                            console.log(data.requests_sent);
+                            this.pending_requests =  data.requests_sent;
+                            this.users.map(user => {if (user.id == toUser.id) {user.isPending =  true}  });
+
+                        } else {
+                            console.log("Error")
+                        }
+                    }
+                } else {
+                    alert("Already send request please wait")
+                }
+
+
+            },
+            async filter(){
+
+                    // example of ajax request to delete
+
+
+                        //console.log(document.getElementById('test').value);
+                        let response = await fetch("{% url 'mainapp:filters_api' %}", {
+                            method: "POST",
+                            credentials:'include',
+                            headers: {
+                                'Content-Type':'application/json',
+                                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value,
+                                //"X-CSRFToken":'{{ csrf_token }}'
+                            },
+                            body:JSON.stringify({
+                                tag:'filter',
+                                age1:parseInt(filterForm.age1.value),
+                                age2:parseInt(filterForm.age2.value),
+                                city:filterForm.city.value,
+                            }),
+                        });
+                        if (response.ok){
+                            let data = await response.json();
+                            let newPendingFilterUsers = this.getFilterArrayPendingFriends(data.users, data.requests_sent, data.current_user.friends);
+                            this.users = newPendingFilterUsers;
+                            this.current_user = data.current_user;
+
+                            this.pending_requests = data.requests;
+
+                        }
+                        else{
+                            alert("filter failed")
+                        }
+
+                },
+
+
+
+
+            getFilterArrayPendingFriends(users, requests, friends) {
+
+                users = users.map(obj => ({ ...obj, isPending: false, isFriend: false }))
+                for (var i = 0; i < users.length; i++) {
+
+                    for (var j = 0; j < requests.length; j++) {
+                        if (users[i].id == requests[j].to_user.id) {
+                            users[i].isPending = true;
+
+                        }
+                    }
+
+                    for (var k = 0; k < friends.length; k++){
+
+                        if (users[i].id  == friends[k]){
+                            console.log("The friend id is " + friends[k])
+                            users[i].isFriend =  true;
+                        }
+                    }
+
+
+
+                }
+                return users;
+            }
+
+
+        }
+
+
+
+
+
+    })
+    myApp.mount('#app')
+</script>
+
+{% endblock %}
