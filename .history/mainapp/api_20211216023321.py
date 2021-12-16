@@ -52,14 +52,14 @@ def filters_api(request):
         if form['age2'] is None:
            form['age2'] = 100
         if form['city'] == '':
-            # print("inside city is none")
+            print("inside city is none")
             userForm = User.objects.filter(hobby__in = a,profile__dob__gt = date.today() - relativedelta(years=+(form['age2']+1)), profile__dob__lt = date.today() - relativedelta(years=+(int(form['age1'])))).exclude(username = currentName).annotate(itemcount=Count('id')).order_by('-itemcount')
         else:
             userForm = User.objects.filter(hobby__in = a,profile__dob__gt = date.today() - relativedelta(years=+form['age2']+1), profile__dob__lt = date.today() - relativedelta(years=+form['age1']), profile__city = form['city']).exclude(username = currentName).annotate(itemcount=Count('id')).order_by('-itemcount')    
         
         #filteredUser = userForm.objects.filter(profile__age <= form['age2'] & profile__age >= form['age1'])
-        # print("max age: ", date.today() - relativedelta(years=+form['age2']))
-        # print("min age: ", date.today() - relativedelta(years=+form['age1']))
+        print("max age: ", date.today() - relativedelta(years=+form['age2']))
+        print("min age: ", date.today() - relativedelta(years=+form['age1']))
         return JsonResponse({
             'requests_sent': [request.to_dict() for request in requests],
             'users': [User.to_dict() for User in userForm],
